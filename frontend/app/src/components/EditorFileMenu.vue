@@ -6,6 +6,7 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu'
 
 export default {
+  // https://github.com/motla/vue-file-toolbar-menu
   components: { VueFileToolbarMenu },
   name: 'EditorFileMenu',
   data () { return {  } },
@@ -14,17 +15,21 @@ export default {
     my_menu () {
       return [
         { text: "File", menu: [
-          { text: "Share", click: () => alert("Action 1") },
-          { text: "New", click: () => alert("Action 2") },
-          { text: "Open", click: () => alert("Action 3") },
-          { text: "Exit", click: () => this.$router.push({ name: 'Home'}) }
+          { text: "Share", icon: "share", click: () => alert("Action 1") },
+          { is: "separator" },
+          { text: "New", icon: "note_add", click: () => alert("Action 2") },
+          { text: "Open", icon: "folder_open", click: () => alert("Action 3") },
+          { text: "Delete", icon: "delete", click: () => alert("Action 3")  },
+          { text: "Print", icon: "printer", click: () => alert("Action 3")  },
+          { text: "Exit", icon: "close", click: () => this.$router.push({ name: 'Home'}) }
         ] },
         { text: "Edit", menu: [
-          { text: "Undo", click: () => alert("Action 1") },
-          { text: "Redo", click: () => alert("Action 2") },
-          { text: "Cut", click: () => alert("Action 3") },
-          { text: "Copy", click: () => alert("Action 4") },
-          { text: "Paste", click: () => alert("Action 4") }
+          { text: "Undo", icon: "undo", click: () => alert("Action 1") },
+          { text: "Redo", icon: "redo", click: () => alert("Action 2") },
+          { is: "separator" },
+          { text: "Cut", icon: "content_cut", click: () => document.execCommand("cut") },
+          { text: "Copy", icon: "content_copy", click: () => document.execCommand("copy") },
+          { text: "Paste", icon: "content_paste", click () { navigator.clipboard.readText().then(text => { document.execCommand("insertText", false, text) }) } }
         ] }
       ]
     }
