@@ -14,8 +14,8 @@ services:
     build:
       context: ./frontend
     entrypoint: /entrypoint.sh
-    # command: yarn serve
-    command: tail -f /dev/null
+    command: yarn serve
+    # command: tail -f /dev/null
     volumes:
       - ./frontend/entrypoint.sh:/entrypoint.sh
       - ./frontend/app:/app
