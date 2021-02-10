@@ -24,6 +24,12 @@ docker-compose up -d
 
 Wait a few minutes while the dependencies are installed and stuff is built :hourglass_flowing_sand:. Use your browser to navigate to [http://localhost:8080](http://localhost:8080) (replace `8080` with whatever port you set `FRONTEND_PORT` to).
 
+## To stop containers
+From within the docucrypt folder, run the following:
+```bash
+docker-compose down
+```
+
 #### Optional
 Create a file named `.env`, using `example.env` as a starting point. This file will contain environment variable such as ports and credentials for the docker containers. Make any changes you want to that file. For example, if you want to run the front end on a different port (default port is `8080`), change the `FRONTEND_PORT` variable. Note that the `.env` file is listed in the `.gitignore` so sensitive information will not be pushed to git.
 ```bash

@@ -4,7 +4,7 @@ import router from './router'
 import vuetify from './plugins/vuetify';
 
 Vue.config.productionTip = false
-Vue.prototype.$appName = 'My App'
+Vue.prototype.$appName = 'DocuCrypt'
 new Vue({
   router,
   vuetify,
