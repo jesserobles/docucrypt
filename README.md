@@ -22,7 +22,19 @@ docker-compose up -d
 ```
 
 
-Wait a few minutes while the dependencies are installed and stuff is built :hourglass_flowing_sand:. Use your browser to navigate to [http://localhost:8080](http://localhost:8080) (replace `8080` with whatever port you set `FRONTEND_PORT` to).
+Wait a few minutes while the dependencies are installed and stuff is built :hourglass_flowing_sand:. The first time you run it may take about 10 minutes before the app is ready. You can check to see if the app is upp and running by running `docker logs docucrypt_front-end_1`, and when it's ready the output will show:
+```bash
+  App running at:
+  - Local:   http://localhost:8080/ 
+
+  It seems you are running Vue CLI inside a container.
+  Access the dev server via http://localhost:<your container's external mapped port>/
+
+  Note that the development build is not optimized.
+  To create a production build, run yarn build.
+```
+
+Use your browser to navigate to [http://localhost:8080](http://localhost:8080) (replace `8080` with whatever port you set `FRONTEND_PORT` to).
 
 ## To stop containers
 From within the docucrypt folder, run the following:
