@@ -10,12 +10,14 @@ x-database-credentials: &database-credentials
 
 services:
   front-end:
-    image: bibibop:latest
+    image: docucrypt_frontend:latest
     build:
       context: ./frontend
+    entrypoint: ./entrypoint.sh
     command: yarn serve
     # command: tail -f /dev/null
     volumes:
+      - ./frontend/entrypoint.sh:/entrypoint.sh
       - ./frontend/app:/app
     networks:
       - app_network
@@ -23,7 +25,7 @@ services:
       - ${FRONTEND_PORT:-8080}:8080
 
   backend:
-    image: repo_python:latest
+    image: docucrypt_python:latest
     build: 
       context: backend
     command: tail -f /dev/null
