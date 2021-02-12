@@ -13,6 +13,8 @@ export default {
 
   computed: {
     my_menu () {
+      //https://github.com/motla/vue-file-toolbar-menu/blob/master/src/Demo/Demo.vue
+      //https://motla.github.io/vue-file-toolbar-menu/
       return [
         { text: "File", menu: [
           { text: "Share", icon: "share", click: () => alert("Action 1") },
