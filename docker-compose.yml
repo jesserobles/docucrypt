@@ -15,10 +15,10 @@ services:
       context: ./frontend
     entrypoint: /entrypoint.sh
     command: yarn serve
-    # command: tail -f /dev/null
     volumes:
       - ./frontend/entrypoint.sh:/entrypoint.sh
       - ./frontend/app:/app
+      - ./.env:/app/.env
     networks:
       - app_network
     ports:
@@ -29,10 +29,18 @@ services:
     build: 
       context: backend
     command: tail -f /dev/null
+    volumes:
+      - ./backend/app:/app
     networks:
       - app_network
     environment:
       <<: *database-credentials
+    ports:
+      - 59837:59837
+      - 50300:50300
+      - 41615:41615
+      - 60265:60265
+      - 54939:54939
 
   db:
     image: bitnami/postgresql:latest

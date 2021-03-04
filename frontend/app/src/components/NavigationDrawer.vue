@@ -9,7 +9,7 @@
                 {{ this.$appName }}
             </v-list-item-title>
             <v-list-item-subtitle>
-                subtext
+                Privacy on Google Docs
             </v-list-item-subtitle>
             </v-list-item-content>
         </v-list-item>

@@ -7,7 +7,6 @@
         rounded="lg"
         class="grey lighten-2"
       >
-        <!--  -->
         <v-container>
           <v-row
             align="center"
