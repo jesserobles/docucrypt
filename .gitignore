@@ -139,3 +139,4 @@ cython_debug/
 
 client_secret*
 credentials.json
+index.html
