@@ -1,57 +1,39 @@
 <template>
   <v-app id="inspire">
-    <v-navigation-drawer
-            v-model="drawer"
-            app
-            temporary
-        >
-      <NavigationDrawer/>
-    </v-navigation-drawer>
-    <NavBar 
-      :editor="editor"
-      v-on:toggledrawer="toggle"
-      v-on:login="login"
-      v-on:logout="logout"
+    <v-main>
+    <router-view
+      :documents="documents"
       :isSignedIn="isSignedIn"
       :userName="userName"
-    />
-    <v-main>
-    <router-view></router-view>
+    ></router-view>
     </v-main>
   </v-app>
 </template>
 
 <script>
-  import NavigationDrawer from './components/NavigationDrawer'
-  // import NavBarHome from './components/NavBarHome'
-  import NavBar from './components/NavBar'
   export default {
-    watch:{
-        $route (){
-            this.switchNavBar();
-        }
-    },
     title: 'Hi there',
     components: {
-      NavigationDrawer,
-      // NavBarHome,
-      NavBar
-
     },
     name: 'App',
     data: () => ({ 
+      foo: "hello",
       drawer: false,
       editor: false,
       isSignedIn: false,
-      userName: null
+      userName: null,
+      documents: [],
     }),
     created() {
       document.title = this.$appName; // better way to dynamically handle title @ https://stackoverflow.com/questions/36612847/how-can-i-bind-the-html-title-content-in-vuejs
-      window.app = this
       this.$gapi.getAuthInstance().then(response => {
         this.isSignedIn = response.isSignedIn.get()
+        this.$root.authenticated = this.isSignedIn
         if (this.isSignedIn) {
           this.userName = this.$gapi.getUserData().firstName
+          if (this.documents.length == 0) {
+            this.fetchFiles()
+          }
         }
       })
     },
@@ -68,13 +50,12 @@
           this.editor = false
         }
       },
-      toggle() {
-        this.drawer = !(this.drawer)
-      },
       login() {
         this.$gapi.login().then(() => {
           this.isSignedIn = true
           this.userName = this.$gapi.getUserData().firstName
+          this.$root.authenticated = true
+          this.fetchFiles()
         })
         
       },
@@ -82,9 +63,42 @@
         this.$gapi.logout().then(() => {
           this.isSignedIn = false
           this.userName = null
+          this.$root.authenticated = false
+          this.documents = []
         })
-        
       },
+      fetchFiles() {
+        this.$gapi.getGapiClient().then((gapi) => {
+          gapi.client.drive.files.list({
+            q: "trashed=false and (mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')",
+            'pageSize': 10,
+            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners)"
+          }).then((response) => {
+            let docs = response.result.files.map(this.jsonifyFileInfo)
+            this.documents = docs
+          })
+        })
+      },
+      jsonifyFileInfo(file) {
+        return {
+          title: file.name,
+          icon: this.getIcon(file.mimeType),
+          color: 'blue darken-2',
+          timestamp: this.moment(file.modifiedTime).format('MMM D, YYYY'),
+          author: this.getAuthor(file),
+          documentId: file.id
+        }
+      },
+      getIcon(mimeType) {
+        return {
+            'application/vnd.google-apps.document': 'mdi-file-document',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'mdi-file-word'
+        }[mimeType]
+      },
+      getAuthor(file) {
+        if (file.ownedByMe) return 'me'
+        return file.owners[0].displayName
+      }
     }
   }
 </script>

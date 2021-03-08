@@ -18,6 +18,10 @@ Vue.config.productionTip = false
 Vue.prototype.$appName = 'DocuCrypt'
 Vue.prototype.moment = moment
 new Vue({
+  data: {
+    authenticated: true,
+    documents: [],
+  },
   router,
   vuetify,
   render: h => h(App)

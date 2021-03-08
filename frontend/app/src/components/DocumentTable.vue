@@ -1,5 +1,5 @@
 <template>
-    <v-simple-table>
+    <v-simple-table class="row-pointer">
     <template v-slot:default>
         <thead>
         <tr>
@@ -22,8 +22,10 @@
         </thead>
         <tbody>
         <tr
+            class="rounded-xl"
             v-for="item in documents"
             :key="item.text"
+            @click="$router.push({ name: 'Document', params: {id: item.documentId, title: item.title}})"
         > 
             <td><v-icon v-text="item.icon" :color="item.color"></v-icon></td>
             <td>{{ item.title }}</td>
@@ -62,46 +64,28 @@
 </template>
 <script>
 export default {
+    props: {
+        loggedIn: {
+            type: Boolean,
+            default: false
+        },
+        documents: Array
+
+    },
     data: () => ({
-        documents: []
+        
     }),
+
     created() {
-        this.fetchFiles()
+
     },
     methods: {
-        fetchFiles() {
-            this.$gapi.getGapiClient().then((gapi) => {
-                
-                gapi.client.drive.files.list({
-                    q: "mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'",
-                    'pageSize': 10,
-                    'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners)"
-                }).then((response) => {
-                    this.documents = response.result.files.map(this.jsonifyFileInfo);
-                    window.files = response.result.files
-                })
-            })
-        },
-        jsonifyFileInfo(file) {
-            return {
-                title: file.name,
-                icon: this.getIcon(file.mimeType),
-                color: 'blue darken-2',
-                timestamp: this.moment(file.modifiedTime).format('MMM D, YYYY'),
-                author: this.getAuthor(file),
-                documentId: file.id
-            }
-        },
-        getIcon(mimeType) {
-            return {
-                'application/vnd.google-apps.document': 'mdi-file-document',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'mdi-file-word'
-            }[mimeType]
-        },
-        getAuthor(file) {
-            if (file.ownedByMe) return 'me'
-            return file.owners[0].displayName
-        }
+
     },
 }
 </script>
+<style lang="css" scoped>
+.row-pointer >>> tbody tr :hover {
+  cursor: pointer;
+}
+</style>

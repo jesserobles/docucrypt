@@ -1,22 +1,55 @@
 <template>
-<div class="wrapper">
-    <SimpleEditor />
+<div>
+    <NavBar
+      :isSignedIn="isSignedIn"
+      :userName="userName"
+      :title="title"
+    /> 
+    <div class="wrapper">
+        <Editor 
+            :documentId="documentId"
+            @title="updateTitle"
+        />
+    </div>
 </div>
+
 
 </template>
 <script>
-import SimpleEditor from '@/components/SimpleEditor.vue'
+import Editor from '@/components/Editor.vue'
+import NavBar from '@/components/NavBar.vue'
 export default {
    components: {
-       SimpleEditor
+        Editor,
+        NavBar,
+   },
+   props: {
+       isSignedIn: Boolean,
+       userName: String,
    },
    data() {
        return {
-           documentId: this.$route.params.id
+           documentId: this.$route.params.id,
+           document: {},
+           title: ''
        }
    },
    created() {
-       console.log(this.documentId)
+       this.title = this.$route.params.title
+   },
+    methods: {
+        updateTitle(title) {
+            this.title = title
+        },
+        fetchDocument() {
+            this.$gapi.getGapiClient().then((gapi) => {
+                gapi.client.docs.documents.get({
+                    documentId: this.documentId
+                }).then(response => {
+                    this.document = response.result
+                })
+            })
+       }
    },
 }
 
