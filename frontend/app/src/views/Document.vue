@@ -8,7 +8,7 @@
     <div class="wrapper">
         <Editor 
             :documentId="documentId"
-            @title="updateTitle"
+            @title="refreshTitle"
         />
     </div>
 </div>
@@ -38,7 +38,7 @@ export default {
        this.title = this.$route.params.title
    },
     methods: {
-        updateTitle(title) {
+        refreshTitle(title) {
             this.title = title
         },
         fetchDocument() {

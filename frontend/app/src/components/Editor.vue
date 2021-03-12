@@ -26,7 +26,11 @@
   </div>
 </template>
 <script>
+import _ from 'lodash'
+import CryptoJS from 'crypto-js'
 import Paragraph from '@/components/Paragraph.vue'
+// for help parsing, take a look at
+// https://github.com/SimonGZ/google-docs-converter/blob/master/lib/parser.ts
 export default {
     components: {
         Paragraph
@@ -49,10 +53,21 @@ export default {
   created() {
     window.paragraphs = []
     this.fetchDocument();
-    
+    window.CryptoJS = CryptoJS
+    window.encryptText = this.encryptText
+    window.decryptText = this.decryptText
   },
   methods: {
+    encryptText(rawText, pp) {
+      let encrypted = CryptoJS.AES.encrypt(rawText, pp)
+      return encrypted.toString()
+    },
+    decryptText(encryptedText, pp) {
+      let decrypted = CryptoJS.AES.decrypt(encryptedText, pp)
+      return decrypted.toString(CryptoJS.enc.Utf8)
+    },
     fetchDocument() {
+      this.paragraphs = []
       this.$gapi.getGapiClient().then((gapi) => {
         gapi.client.docs.documents
           .get({
@@ -67,13 +82,16 @@ export default {
             this.document.body.content.forEach(elem => {
                 if (elem.paragraph) {
                     this.paragraphs.push(elem.paragraph)
-                    window.paragraphs.push(elem)
+                    // window.paragraphs.push(elem)
                 }
             })
             
           });
       });
     },
+    debounceFetchDocument: _.debounce(function () {
+        this.fetchDocument()
+    }, 1500),
     gapiToHtml(data) {
       let content = data.body.content;
       let html = "";
@@ -90,7 +108,7 @@ export default {
                 if (value) {
                   let e = document.createElement(this.tagMap[key]);
                   e.innerHTML = innerHtml;
-                  window.e = e;
+                  // window.e = e;
                   innerHtml = e;
                 }
               }
@@ -119,6 +137,8 @@ export default {
             gapi.client.docs.documents.batchUpdate(
                 {documentId: this.documentId, requests: requests}).execute()
             console.log("Done")
+        }).then(() => {
+          this.debounceFetchDocument()
         })
     },
     insertElement() {
@@ -136,6 +156,8 @@ export default {
             gapi.client.docs.documents.batchUpdate(
                 {documentId: this.documentId, requests: requests}).execute()
             console.log("Done")
+        }).then(() => {
+          this.debounceFetchDocument()
         })
     },
     updateContent() {
