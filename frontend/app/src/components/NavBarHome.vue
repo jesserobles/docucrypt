@@ -75,9 +75,11 @@ export default {
         },
         logfunction() {
             if (this.isSignedIn) {
-                return this.logout
+                this.logout()
+                return
             }
-            return this.login
+            this.login()
+            return
         },
     },
 }

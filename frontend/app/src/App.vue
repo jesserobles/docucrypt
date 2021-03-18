@@ -5,6 +5,8 @@
       :documents="documents"
       :isSignedIn="isSignedIn"
       :userName="userName"
+      @login="login"
+      @logout="logout"
     ></router-view>
     </v-main>
   </v-app>
@@ -17,7 +19,6 @@
     },
     name: 'App',
     data: () => ({ 
-      foo: "hello",
       drawer: false,
       editor: false,
       isSignedIn: false,
