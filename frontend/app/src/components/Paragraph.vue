@@ -17,45 +17,58 @@ export default {
     props: {
         paragraph: Object,
         documentId: String,
-    //     'paragraph': {'elements': [{'startIndex': 1,
-    //     'endIndex': 27,
-    //     'textRun': {'content': 'Hello from Docucrypt! Hi. ', 'textStyle': {}}},
-    //     {'startIndex': 27,
-    //     'endIndex': 31,
-    //     'textRun': {'content': 'Some', 'textStyle': {'italic': True}}},
-    //     {'startIndex': 31,
-    //     'endIndex': 32,
-    //     'textRun': {'content': ' ', 'textStyle': {}}},
-    //     {'startIndex': 32,
-    //     'endIndex': 41,
-    //     'textRun': {'content': 'formatted', 'textStyle': {'underline': True}}},
-    //     {'startIndex': 41,
-    //     'endIndex': 42,
-    //     'textRun': {'content': ' ', 'textStyle': {}}},
-    //     {'startIndex': 42,
-    //     'endIndex': 46,
-    //     'textRun': {'content': 'text', 'textStyle': {'bold': True}}},
-    //     {'startIndex': 46,
-    //     'endIndex': 48,
-    //     'textRun': {'content': '.\n', 'textStyle': {}}}],
-    // 'paragraphStyle': {'namedStyleType': 'NORMAL_TEXT',
-    //     'direction': 'LEFT_TO_RIGHT'}}},
-
     },
     data() {
         return {
-            elements: []
+            elements: [],
+            tagMap: {
+                italic: "em",
+                underline: "u",
+                bold: "strong",
+            },
+            html: "",
         }
     },
     created() {
         this.paragraph.elements.forEach(elem => {
             this.elements.push(elem)
         })
+        this.html = this.jsonToHtml(this.paragraph)
     },
     methods: {
         changed(element) {
             this.$emit('changed', element)
-        }
+        },
+        jsonToHtml(paragraph) {
+            // This will generate the inner html that goes into a
+            // paragraph element.
+            let content = ""
+            let elements = paragraph['elements']
+            for (let i = 0;i < elements.length; i++) {
+                let innerHtml = elements[i].textRun.content;
+                let textStyle = elements[i].textRun.textStyle
+                if (textStyle && 
+                    Object.keys(textStyle).length !== 0 && 
+                    textStyle.constructor === Object) {
+                    for (const [key, value] of Object.entries(
+                        elements[i].textRun.textStyle
+                    )) {
+                        if (value) {
+                            let e = document.createElement(this.tagMap[key])
+                            e.innerHTML = innerHtml
+                            innerHtml = e.outerHTML
+                            content += innerHtml
+                        }
+                    }
+                } else { // just a plain text run
+                    content += innerHtml
+                }
+            }
+            return content
+        },
+        htmlToJson(html) {
+            return html
+        },
     },
 }
 </script>

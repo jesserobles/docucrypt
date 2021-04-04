@@ -9,9 +9,8 @@
             <div
               ref="text"
               class="text"
+              contenteditable="true"
             >
-            <!-- :contenteditable="edit_mode" -->
-            <!-- v-html="content" -->
                 <Paragraph v-for="(para, index) in paragraphs"
                     :key="index"
                     :paragraph="para"
@@ -67,6 +66,7 @@ export default {
       return decrypted.toString(CryptoJS.enc.Utf8)
     },
     fetchDocument() {
+      this.$emit("toggleOverlay", true)
       this.paragraphs = []
       this.$gapi.getGapiClient().then((gapi) => {
         gapi.client.docs.documents
@@ -85,7 +85,7 @@ export default {
                     // window.paragraphs.push(elem)
                 }
             })
-            
+            this.$emit("toggleOverlay", false)
           });
       });
     },

@@ -1,5 +1,11 @@
 <template>
   <v-app id="inspire">
+    <v-overlay :value="overlay">
+      <v-progress-circular
+        indeterminate
+        size="64"
+      ></v-progress-circular>
+    </v-overlay>
     <v-main>
     <router-view
       :documents="documents"
@@ -7,6 +13,8 @@
       :userName="userName"
       @login="login"
       @logout="logout"
+      @toggleOverlay="toggleOverlay"
+      @updateDocs="fetchFiles"
     ></router-view>
     </v-main>
   </v-app>
@@ -24,8 +32,11 @@
       isSignedIn: false,
       userName: null,
       documents: [],
+      overlay: false,
     }),
     created() {
+      window.dh = this.dh
+      this.overlay = true
       document.title = this.$appName; // better way to dynamically handle title @ https://stackoverflow.com/questions/36612847/how-can-i-bind-the-html-title-content-in-vuejs
       this.$gapi.getAuthInstance().then(response => {
         this.isSignedIn = response.isSignedIn.get()
@@ -34,6 +45,7 @@
           this.userName = this.$gapi.getUserData().firstName
           if (this.documents.length == 0) {
             this.fetchFiles()
+            this.overlay = false
           }
         }
       })
@@ -44,12 +56,23 @@
       }
     },
     methods: {
+      getSender() {
+        let docucrypt_id = localStorage.getItem("DOCUCRYPT_ID")
+        if (docucrypt_id == undefined || docucrypt_id == null) {
+          docucrypt_id = 1
+          localStorage.setItem("DOCUCRYPT_ID", docucrypt_id)
+        }
+        return docucrypt_id
+      },
       switchNavBar() {
         if (this.$route.name === 'Document') {
           this.editor = true
         } else {
           this.editor = false
         }
+      },
+      toggleOverlay(show) {
+        this.overlay = show
       },
       login() {
         this.$gapi.login().then(() => {
@@ -71,9 +94,9 @@
       fetchFiles() {
         this.$gapi.getGapiClient().then((gapi) => {
           gapi.client.drive.files.list({
-            q: "trashed=false and (mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')",
+            q: "trashed=false and (mimeType='application/vnd.google-apps.document')",
             'pageSize': 10,
-            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners)"
+            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners, appProperties)"
           }).then((response) => {
             let docs = response.result.files.map(this.jsonifyFileInfo)
             this.documents = docs

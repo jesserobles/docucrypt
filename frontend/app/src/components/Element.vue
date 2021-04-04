@@ -1,5 +1,5 @@
 <template>
-    <span contenteditable="true"
+    <span
         @input="changed"
         v-html="html"
     ></span>
@@ -54,6 +54,7 @@ export default {
         this.textStyle = this.element.textRun.textStyle
         this.content = this.element.textRun.content
         this.html = this.renderElement(this.element)
+        window.elemObj = this.element
     },
     methods: {
         changed(elem) {

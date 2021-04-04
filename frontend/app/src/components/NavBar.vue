@@ -17,7 +17,7 @@
                 <span>Docucrypt Home</span>
             </v-tooltip>
             </v-list-item-icon> 
-                {{ title }}
+            <span contenteditable="true" v-on:blur="updateTitle" @keyup.enter="enter">{{ title }}</span>
         </v-toolbar-title> 
     </v-app-bar>
     <div class="toolbar-wrapper">
@@ -63,11 +63,7 @@ export default {
                     text: "Save...",
                     icon: "save",
                     click: () =>
-                    alert(
-                        "You're amazing, " +
-                        (prompt("What's your name?") || "friend") +
-                        "!"
-                    ),
+                    that.save()
                 },
                 { is: "separator" },
                 { text: "Print...", icon: "print", click: () => window.print() },
@@ -241,7 +237,17 @@ export default {
         },
         close() {
             this.$router.push({name: 'Home'})
-        }
+        },
+        save() {
+            this.$emit('save')
+        },
+        updateTitle(e) {
+            this.$emit("updateTitle", e.srcElement.innerText)
+        },
+        enter(e) {
+            e.preventDefault();
+            console.log("enter")
+        },
     },
 }
 </script>
@@ -332,5 +338,8 @@ select {
 .toolbar-wrapper {
     padding-left: 5px;
     padding-right: 5px;
+}
+.v-text-field {
+    color: red !important;
 }
 </style>
