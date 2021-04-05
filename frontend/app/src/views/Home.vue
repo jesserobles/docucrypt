@@ -77,7 +77,10 @@
     <v-row>
       <v-col>
         <v-container>
-          <DocumentTable :documents="documents" />
+          <DocumentTable 
+            :documents="documents" 
+            @updateDocs="updateDocs"
+          />
         </v-container>
       </v-col>
     </v-row>
@@ -114,7 +117,11 @@ export default {
           let title = respose.result.title
           this.$router.push({ name: 'Document', params: {id: documentId, title: title}})
         })
-      })
+      }).then(this.updateDocs)
+    },
+    updateDocs() {
+      console.log("Home.updateDocs")
+      this.$emit("updateDocs")
     },
     cardAction() {
       alert("clicked")

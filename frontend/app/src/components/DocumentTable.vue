@@ -48,11 +48,11 @@
 
                     <v-list>
                     <v-list-item
-                        v-for="n in 5"
-                        :key="n"
-                        @click="() => {}"
+                        v-for="opt in funcOptions"
+                        :key="opt.name"
+                        @click="opt.method(item.documentId)"
                     >
-                        <v-list-item-title>Option {{ n }}</v-list-item-title>
+                        <v-list-item-title>{{ opt.name }}</v-list-item-title>
                     </v-list-item>
                     </v-list>
                 </v-menu>
@@ -63,6 +63,7 @@
     </v-simple-table>
 </template>
 <script>
+// import _ from 'lodash'
 export default {
     props: {
         loggedIn: {
@@ -73,14 +74,42 @@ export default {
 
     },
     data: () => ({
-        
+        funcOptions: []
     }),
 
     created() {
-
+        this.funcOptions = [   
+            {"name": "Delete", "method": this.deleteDoc},
+            {"name": "Share", "method": this.shareDoc}
+        ]
     },
     methods: {
-
+        shareDoc(docID) {
+            console.log("share" + docID)
+        },
+        share(email, docID, primeNumber) {
+            let baseUrl = window.location.origin
+            let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
+            this.$gapi.getGapiClient().then((gapi) => {
+                gapi.client.drive.permissions.create({
+                        fileId: docID,
+                        emailMessage: message,
+                        sendNotificationEmail: true,
+                        type: 'user',
+                        role: 'writer',
+                        emailAddress: email,
+                        fields: 'id',
+                    }).execute()
+            })
+        },
+        deleteDoc(docID) {
+            this.$gapi.getGapiClient().then((gapi) => {
+                gapi.client.drive.files.delete({fileId: docID}).execute()
+            }).then(this.updateDocs)
+        },
+        updateDocs() {
+            this.$emit("updateDocs")
+        },
     },
 }
 </script>

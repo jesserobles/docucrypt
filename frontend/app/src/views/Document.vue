@@ -12,6 +12,7 @@
             :documentId="documentId"
             @title="refreshTitle"
             @toggleOverlay="toggleOverlay"
+            ref="editor"
         />
     </div>
 </div>
@@ -47,7 +48,7 @@ export default {
         save() {
             // Add custom file properties to indicate if file is encrypted:
             // https://developers.google.com/drive/api/v3/properties
-            alert("Saved")
+            this.$refs.editor.save()
         },
         overridesave(e) {
             // Method to allow ctr+s and cmd+s to be used to save to docs

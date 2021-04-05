@@ -37,6 +37,7 @@
     created() {
       window.dh = this.dh
       this.overlay = true
+      window.fetchFiles = this.fetchFiles
       document.title = this.$appName; // better way to dynamically handle title @ https://stackoverflow.com/questions/36612847/how-can-i-bind-the-html-title-content-in-vuejs
       this.$gapi.getAuthInstance().then(response => {
         this.isSignedIn = response.isSignedIn.get()
@@ -92,6 +93,8 @@
         })
       },
       fetchFiles() {
+        this.toggleOverlay(true)
+        console.log("App.fetchFiles")
         this.$gapi.getGapiClient().then((gapi) => {
           gapi.client.drive.files.list({
             q: "trashed=false and (mimeType='application/vnd.google-apps.document')",
@@ -100,6 +103,8 @@
           }).then((response) => {
             let docs = response.result.files.map(this.jsonifyFileInfo)
             this.documents = docs
+          }).then(() => {
+            this.toggleOverlay(false)
           })
         })
       },
