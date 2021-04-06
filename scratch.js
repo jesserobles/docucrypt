@@ -59,3 +59,17 @@ bob.computeSecret(fromHexString(aliceKey)).toString('hex') == alice.computeSecre
 tim.computeSecret(fromHexString(aliceKey)).toString('hex') == alice.computeSecret(fromHexString(timKey)).toString('hex')
 
 tim.computeSecret(fromHexString(aliceKey)).toString('hex') == alice.computeSecret(fromHexString(timKey)).toString('hex')
+
+let sharedSecret = "78fb31f9ad1b783c135c713cbd687896"
+
+let prime = "799bdf9b26cc6a2aeb01950d79c7fa33"
+alice.setPrivateKey("2ff38b0caa")
+bob.setPrivateKey("889b0bc6c2367a29cf1b98e9f7687431")
+
+const author = dh.createDiffieHellman(prime, 'hex');
+author.setPrivateKey(fromHexString("c1d708a030"));
+let authorKey = author.generateKeys();
+const viewer = dh.createDiffieHellman(prime, 'hex');
+viewer.setPrivateKey(fromHexString("d6c17a28e4ec6f621ac18dedff9402f0"))
+let viewerKey = viewer.generateKeys()
+author.computeSecret(viewerKey).toString('hex');

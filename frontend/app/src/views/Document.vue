@@ -40,8 +40,6 @@ export default {
    },
    created() {
        this.title = this.$route.params.title
-    //    document.addEventListener('keyup', this.logKey)
-    //    document.onkeyup = this.logKey
        document.onkeydown = this.overridesave
    },
     methods: {

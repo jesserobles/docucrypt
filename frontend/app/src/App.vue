@@ -102,6 +102,7 @@
             'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners, appProperties)"
           }).then((response) => {
             let docs = response.result.files.map(this.jsonifyFileInfo)
+            window.rawFiles = response.result.files
             this.documents = docs
           }).then(() => {
             this.toggleOverlay(false)
