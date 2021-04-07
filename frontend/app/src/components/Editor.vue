@@ -32,11 +32,14 @@ export default {
     return {
       html: '<p></p>',
       html_: '<p></p>',
-      pp: 'mysecret',
-      document: {},
-      docMetadata: {},
-      body: [],
-      edit_mode: true,
+      pp: null,
+      document: null,
+      metadata: null,
+      body: null,
+      encrypted: false,
+      userId: null,
+      ownerIsMe: false,
+      documentLocalData: null,
       tagMap: {
         italic: "em",
         underline: "u",
@@ -49,46 +52,112 @@ export default {
         "strong": "bold",
         "b": "bold"
       },
-      // paragraphs: [],
     };
   },
   created() {
-    window.paragraphs = []
-    this.fetchDocument();
-    this.logPrime()
-    window.save_ = this.save
-    window.createDH = this.createDH
-    window.CryptoJS = CryptoJS
-    window.encryptText = this.encryptText
-    window.decryptText = this.decryptText
-    window.paragraphToJson = this.paragraphToJson
+    if (!this.$root.authenticated) {
+      this.$router.push({name: 'Home'})
+    }
+    this.userId = this.$gapi.getUserData().id
+    const storageKey = this.getStorageKey()
+    let documentLocalData = localStorage.getItem(storageKey)
+    if (localStorage.getItem(storageKey))
+      documentLocalData = JSON.parse(localStorage.getItem(storageKey))
+    this.documentLocalData = documentLocalData
+    this.fetchDocument()
   },
   methods: {
+    getStorageKey() {
+        return `_DC_${this.userId}_${this.documentId}`
+    },
     logInput(e) {
       this.html_ = e.target.innerHTML
       console.log(this.html_)
       window.html_ = this.html_
     },
     encryptText(rawText, pp) {
-      console.log("Encrypting")
       let encrypted = CryptoJS.AES.encrypt(rawText, pp)
       return encrypted.toString()
     },
     decryptText(encryptedText, pp) {
-      console.log("Decrypting")
       let decrypted = CryptoJS.AES.decrypt(encryptedText, pp)
       return decrypted.toString(CryptoJS.enc.Utf8)
+    },
+    fetchMetadata() {
+      this.$gapi.getGapiClient().then((gapi) => {
+        gapi.client.drive.files.get({
+            fileId: this.documentId,
+            fields: 'id,name,mimeType,appProperties'
+        }).then((response) => {
+            let metadata = response.result.appProperties
+            console.log("Doc metadata: " + JSON.stringify(metadata))
+            return metadata
+        })
+      })
+    },
+    getDH(prime) {
+      const dhObject = this.dh.createDiffieHellman(prime, 'hex');
+      const publicKeyObj = dhObject.generateKeys().toString('hex');
+      const privateKey = dhObject.getPrivateKey('hex')
+      let keyData = {
+        "privateKey": privateKey,
+        "prime": prime,
+        "publicKey": publicKeyObj
+      }
+      return keyData
+      
     },
     fetchDocument() {
       this.$emit("toggleOverlay", true)
       this.$gapi.getGapiClient().then((gapi) => {
-        gapi.client.docs.documents.get({
-            documentId: this.documentId,
+        gapi.client.drive.files.get({
+            fileId: this.documentId,
+            fields: 'id,name,mimeType,appProperties'
         }).then((response) => {
-            this.document = response.result;
-            this.body = this.document.body.content
+          let metadata = response.result.appProperties
+          if (metadata) {
+            this.encrypted = true
+            let encrytionKeyName = metadata.encryptionKeyName
+            if (!this.documentLocalData) {
+              // We're the viewer.
+              const prime = this.getPrime()
+              const dhObject = this.dh.createDiffieHellman(prime, 'hex');
+              const viewerPublicKeyObj = dhObject.generateKeys().toString('hex');
+              const viewerPrivateKey = dhObject.getPrivateKey('hex')
+              const authorPublicKey = metadata.authorPublicKey
+              let sharedSecret = dhObject.computeSecret(this.fromHexString(authorPublicKey)).toString('hex')
+              let documentLocalData = {
+                "privateKey": viewerPrivateKey,
+                "prime": prime,
+                "sharedSecret": sharedSecret
+              }
+              localStorage.setItem(this.getStorageKey(), JSON.stringify(documentLocalData))
+              metadata['viewerPublicKey'] = viewerPublicKeyObj
+              gapi.client.drive.files.update(
+                {fileId: this.documentId, appProperties: metadata}
+              ).then(() => {
+
+              })
+            } else {
+              // We're the author. On save, need to check if we need to reset encrytion using shared secret.
+              if (encrytionKeyName == "author") {
+                this.pp = this.documentLocalData.privateKey    
+              } else {
+                let sharedSecret = this.documentLocalData.sharedSecret
+                if (sharedSecret)
+                  this.pp = this.documentLocalData.sharedSecret
+              }
+              this.metadata = metadata
+              }
+            
+          }
+          gapi.client.docs.documents.get({
+              documentId: this.documentId,
+          }).then((resp) => {
+            this.document = resp.result;
             this.title = this.document.title;
             this.$emit('title', this.title)
+            this.body = this.document.body.content
             window.doc = this.document
             let contentDiv = document.createElement('div')
             this.body.forEach(element => {
@@ -98,23 +167,13 @@ export default {
             });
             this.html = contentDiv.innerHTML
             this.html_ = contentDiv.innerHTML
-            window.html_ = this.html_
-            window.convertHtml = this.convertHtml
-            // this.createDH()
             this.$emit("toggleOverlay", false)
-          }).then(() => {
-            gapi.client.drive.files.get({
-                fileId: this.documentId,
-                fields: 'id,name,mimeType,appProperties'
-            }).then((response) => {
-                let metadata = response.result.appProperties
-                if (metadata != undefined) {
-                  this.docMetadata = metadata
-                  console.log("Doc metadata: " + JSON.stringify(metadata))
-                }
-            })
+          }).catch((err) => {
+            console.log(err)
+            this.$emit("toggleOverlay", false)
           })
-      });
+        })
+      })
     },
     fromHexString(hexString) {
       return new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
@@ -139,6 +198,7 @@ export default {
       let storageKey = `_DC_${this.documentId}`
       let documentLocalData = localStorage.getItem(storageKey)
       if (documentLocalData == null) {
+        // Either new document, or document was shared with us.
         documentLocalData = {}
         if (_.isEmpty(metadata)) {
           // New document
@@ -204,10 +264,16 @@ export default {
           })*/
         }
       } else {
+        // Document exists. We are either author opening it, or viewer.
+        // If we're author, check encryptionKeyName. If it's author,
+        // Check for viewerPublicKey. If it doesn't exist, do nothing, pp
+        // is documentLocalData.privateKey. Otherwise, generate sharedSecret
+        // using viewerPublicKey.
         // documentLocalData exists. Get encryp 
         // We still create the DH using the stored prime number
-        const prime = author.getPrime('hex').toString('hex')
-        const author = this.dh.createDiffieHellman(prime, 'hex');
+        // const author = this.dh.createDiffieHellman(128)
+        // const prime = author.getPrime('hex').toString('hex')
+        // const author = this.dh.createDiffieHellman(prime, 'hex');
         // let authorPublicKey = author.generateKeys().toString("hex")
         // Check documentLocalData for sharedSecret. If it doesn't exist, we need to generate it using view public key
         let sharedSecret = documentLocalData.sharedSecret
@@ -224,10 +290,12 @@ export default {
       // const aliceKey = alice.generateKeys();
       // const prime = alice.getPrime('hex').toString('hex');
     },
-    logPrime() {
+    getPrime() {
       const urlParams = new URLSearchParams(window.location.search);
       let prime = urlParams.get("p")
-      console.log("prime: " + prime)
+      if (prime){
+        return prime
+      }
     },
     convertParagraph(paragraph) {
         let pElement = document.createElement('p')
@@ -241,8 +309,9 @@ export default {
     },
     convertRun(textRun) {
       let content = textRun.content
-      content = this.decryptText(content, this.pp)
-      // if this.decryptText(, this.pp)
+      if (this.encrypted && this.pp) {
+        content = this.decryptText(content, this.pp)
+      }
       let textStyle = textRun.textStyle
       let span = document.createElement('span')
       span.innerText = content
@@ -353,126 +422,35 @@ export default {
           })
         }
       })
-      // elements[elements.length - 1].textRun.content = elements[elements.length - 1].textRun.content + '\n'
       return elements
     },
-    debounceFetchDocument: _.debounce(function () {
-        this.fetchDocument()
-    }, 1000),
-    fetchAfterDelete(wait) {
-      this.$emit("toggleOverlay", true)
-      // this.paragraphs = []
-      let that = this
-      console.log('fetchingDocument')
-      _.delay(function () {
-        that.$gapi.getGapiClient().then((gapi) => {
-          gapi.client.docs.documents
-            .get({
-              documentId: that.documentId,
-            })
-            .then((response) => {
-              that.document = response.result;
-              that.title = that.document.title;
-              that.$emit('title', that.title)
-              window.doc = that.document
-              that.document.body.content.forEach(elem => {
-                  if (elem.paragraph) {
-                      that.paragraphs.push(elem.paragraph)
-                      // window.paragraphs.push(elem)
-                  }
-              })
-              
-            });
-        });
-      }, wait)
-      console.log('Fetched')
-      this.$emit("toggleOverlay", false)
-    },
-    deleteDocContents(){
-      let doc = this.document
-      let lastElementIndex = doc.body.content.length - 1
-      let startIndex = 1
-      let endIndex = doc.body.content[lastElementIndex].endIndex - 1
-      let requests = [
-          {
-              'deleteContentRange': {
-                  'range': {
-                      'startIndex': startIndex,
-                      'endIndex': endIndex,
-                  }
-              }
-          },
-      ]
-      this.$gapi.getGapiClient().then((gapi) => {
-        gapi.client.docs.documents.batchUpdate(
-                {documentId: this.documentId, requests: requests}
-        ).execute()
-        this.fetchAfterDelete(500)
-      })
-    },
-    saveDocument() {
-
-    },
-    deleteElement() {
-        this.$gapi.getGapiClient().then((gapi) => {
-            let requests = [
-                {
-                    'deleteContentRange': {
-                        'range': {
-                            'startIndex': 1,
-                            'endIndex': 6,
-                        }
-                    }
-                },
-            ]
-            gapi.client.docs.documents.batchUpdate(
-                {documentId: this.documentId, requests: requests}).execute()
-            console.log("Done")
-        }).then(() => {
-          this.debounceFetchDocument()
-        })
-    },
-    insertElement() {
-        this.$gapi.getGapiClient().then((gapi) => {
-            let requests = [
-                {
-                    'insertText': {
-                        'location': {
-                            'index': 1,
-                        },
-                        'text': "Hello "
-                    }
-                }
-            ]
-            gapi.client.docs.documents.batchUpdate(
-                {documentId: this.documentId, requests: requests}).execute()
-            console.log("Done")
-        }).then(() => {
-          this.debounceFetchDocument()
-        })
-    },
-    updateText: _.debounce(function () {
-      // do what you need here
-      console.log("In test function")
-      let requests = this.convertHtml(this.html_)
-      if (requests.length > 0) {
-        this.$gapi.getGapiClient().then((gapi) => {
-          gapi.client.docs.documents.batchUpdate(
-                    {documentId: this.documentId, requests: requests}).execute()
-        }).then(this.debounceFetchDocument)
-      }
-      this.$emit("toggleOverlay", false)
-      console.log("requests:")
-      console.log(requests)
-      return requests
-    }, 1000),
     save() {
+      let encrytionKeyName = this.metadata.encryptionKeyName
+      if (encrytionKeyName == "author" && this.metadata.viewerPublicKey) {
+        let viewerPublicKey = this.metadata.viewerPublicKey
+        const prime = this.documentLocalData.prime
+        const dhObject = this.dh.createDiffieHellman(prime, 'hex')
+        const privateKey = this.documentLocalData.privateKey
+        dhObject.setPrivateKey(this.fromHexString(privateKey))
+        let sharedSecret = dhObject.computeSecret(this.fromHexString(viewerPublicKey)).toString('hex')
+        this.pp = sharedSecret
+        this.documentLocalData["sharedSecret"] = sharedSecret
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.documentLocalData))
+        this.metadata['encryptionKeyName'] = "shared"
+        this.$gapi.getGapiClient().then((gapi) => {
+           gapi.client.drive.files.update(
+              {fileId: this.documentId, appProperties: this.metadata}
+            )
+        })
+
+      }
       let doc = this.document
+      let requests = []
       let lastElementIndex = doc.body.content.length - 1
       let startIndex = 1
       let endIndex = doc.body.content[lastElementIndex].endIndex - 1 || -1
       if (endIndex > startIndex) {
-        let requests = [
+        requests.push([
             {
                 'deleteContentRange': {
                     'range': {
@@ -481,19 +459,15 @@ export default {
                     }
                 }
             },
-        ]
+        ])
         this.$emit("toggleOverlay", true)
+        Array.prototype.push.apply(requests, this.convertHtml(this.html_))
         this.$gapi.getGapiClient().then((gapi) => {
           gapi.client.docs.documents.batchUpdate(
-                    {documentId: this.documentId, requests: requests}).execute()
+                    {documentId: this.documentId, requests: requests}
+          ).then(this.fetchDocument)
         })
       }
-      // this.fetchAfterDelete()
-      this.updateText()
-      
-      // requests = this.convertHtml(this.html_)
-      console.log("Deleted Documents")
-      // return requests
     },
   },
 };

@@ -73,3 +73,6 @@ const viewer = dh.createDiffieHellman(prime, 'hex');
 viewer.setPrivateKey(fromHexString("d6c17a28e4ec6f621ac18dedff9402f0"))
 let viewerKey = viewer.generateKeys()
 author.computeSecret(viewerKey).toString('hex');
+
+let a = await gapi.auth2.getAuthInstance()
+a.currentUser.fe.Aa

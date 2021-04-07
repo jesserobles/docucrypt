@@ -12,6 +12,7 @@
             :documentId="documentId"
             @title="refreshTitle"
             @toggleOverlay="toggleOverlay"
+            @updateDocs="updateDocs"
             ref="editor"
         />
     </div>
@@ -61,6 +62,9 @@ export default {
         toggleOverlay(show) {
             this.$emit("toggleOverlay", show)
         },
+        updateDocs() {
+            this.$emit("updateDocs")
+        },
         updateTitle(e) {
             this.$gapi.getGapiClient().then((gapi) =>{
                 gapi.client.drive.files.update({
@@ -68,7 +72,7 @@ export default {
                     resource: {'name': e}
                 }).then(() => {
                     this.refreshTitle(e)
-                    this.$emit("updateDocs")
+                    this.updateDocs()
                 })
             })
         },

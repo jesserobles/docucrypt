@@ -1,4 +1,47 @@
 <template>
+<div>
+    <v-dialog
+      v-model="dialog"
+      width="500"
+    >
+      <v-card>
+        <v-card-title class="headline grey lighten-2">
+          Share Document
+        </v-card-title>
+        <v-form
+            ref="form"
+            @submit.prevent="submit"
+        >
+        <v-card-text>
+         <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="form.email"
+                  label="Email*"
+                  required
+                  :rules="rules.email"
+                ></v-text-field>
+              </v-col>
+            </v-row>
+         </v-container>
+        </v-card-text>
+        </v-form>
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            :disabled="!formIsValid"
+            text
+            @click="shareDoc"
+          >
+            Share
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-simple-table class="row-pointer">
     <template v-slot:default>
         <thead>
@@ -61,6 +104,7 @@
         </tbody>
     </template>
     </v-simple-table>
+    </div>
 </template>
 <script>
 // import _ from 'lodash'
@@ -70,42 +114,94 @@ export default {
             type: Boolean,
             default: false
         },
-        documents: Array
+        documents: Array,
+        userId: String
 
     },
-    data: () => ({
-        funcOptions: []
-    }),
-
+    data: () => {
+        const defaultForm = Object.freeze({
+            email: '',
+        })
+        return {
+            form: Object.assign({}, defaultForm),
+            funcOptions: [],
+            dialog: false,
+            rules: {
+                email: [val => (((val || '').length > 0) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || ''))) || 'Email address is required']
+            },
+            currentDocId: null,
+            defaultForm
+        }
+    },
+    computed: {
+      formIsValid () {
+        return (
+          this.form.email
+        )
+      },
+    },
     created() {
         this.funcOptions = [   
             {"name": "Delete", "method": this.deleteDoc},
-            {"name": "Share", "method": this.shareDoc}
+            {"name": "Share", "method": this.openShare}
         ]
+        console.log("Doc Table" + this.userId)
+        window.share = this.share
     },
     methods: {
-        shareDoc(docID) {
-            console.log("share" + docID)
+        resetForm () {
+            this.form = Object.assign({}, this.defaultForm)
+            this.$refs.form.reset()
         },
-        share(email, docID, primeNumber) {
-            let baseUrl = window.location.origin
-            let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
+        submit () {
+            this.resetForm()
+        },
+        getStorageKey(docID) {
+            return `_DC_${this.userId}_${docID}`
+        },
+        openShare(docID) {
+            this.dialog = true
+            this.currentDocId = docID
+        },
+        shareDoc() {
+            let docID = this.currentDocId
+            let email = this.form.email
+            console.log("share: " + docID)
+            let storageKey = this.getStorageKey(docID)
+            let documentLocalData = localStorage.getItem(storageKey)
+            if (!documentLocalData)
+                return
+            documentLocalData = JSON.parse(documentLocalData)
+            const prime = documentLocalData.prime
+            const urlWithParams = new URL(`${window.location.href}doc/${docID}`)
+            urlWithParams.searchParams.append("p", prime)
+            // console.log(urlWithParams.href)
+            let message = {
+                fileId: docID,
+                emailMessage: urlWithParams.href,
+                sendNotificationEmail: true,
+                type: 'user',
+                role: 'writer',
+                emailAddress: email,
+                
+            }
             this.$gapi.getGapiClient().then((gapi) => {
-                gapi.client.drive.permissions.create({
-                        fileId: docID,
-                        emailMessage: message,
-                        sendNotificationEmail: true,
-                        type: 'user',
-                        role: 'writer',
-                        emailAddress: email,
-                        fields: 'id',
-                    }).execute()
+                gapi.client.drive.permissions.create(message).then(() => {
+                    this.dialog = false
+                    this.resetForm()
+                })
             })
         },
         deleteDoc(docID) {
             this.$gapi.getGapiClient().then((gapi) => {
-                gapi.client.drive.files.delete({fileId: docID}).execute()
-            }).then(this.updateDocs)
+                gapi.client.drive.files.delete({fileId: docID}).then(this.updateDocs)
+            }).then(() => {
+                // delete key
+                let key = this.getStorageKey(docID)
+                console.log("removing: " + key)
+                localStorage.removeItem(key)
+                this.updateDocs()
+            })
         },
         updateDocs() {
             this.$emit("updateDocs")

@@ -11,6 +11,7 @@
       :documents="documents"
       :isSignedIn="isSignedIn"
       :userName="userName"
+      :userId="userId"
       @login="login"
       @logout="logout"
       @toggleOverlay="toggleOverlay"
@@ -31,6 +32,7 @@
       editor: false,
       isSignedIn: false,
       userName: null,
+      userId: null,
       documents: [],
       overlay: false,
     }),
@@ -43,11 +45,16 @@
         this.isSignedIn = response.isSignedIn.get()
         this.$root.authenticated = this.isSignedIn
         if (this.isSignedIn) {
-          this.userName = this.$gapi.getUserData().firstName
+          const userData = this.$gapi.getUserData()
+          this.userName = userData.firstName
+          this.userId = userData.id
+          this.$root.userId = userData.id
           if (this.documents.length == 0) {
             this.fetchFiles()
             this.overlay = false
           }
+        } else {
+          this.overlay = false
         }
       })
     },
@@ -65,20 +72,16 @@
         }
         return docucrypt_id
       },
-      switchNavBar() {
-        if (this.$route.name === 'Document') {
-          this.editor = true
-        } else {
-          this.editor = false
-        }
-      },
       toggleOverlay(show) {
         this.overlay = show
       },
       login() {
         this.$gapi.login().then(() => {
           this.isSignedIn = true
-          this.userName = this.$gapi.getUserData().firstName
+          const userData = this.$gapi.getUserData()
+          this.userId = userData.id
+          this.$root.userId = userData.id
+          this.userName = userData.firstName
           this.$root.authenticated = true
           this.fetchFiles()
         })
@@ -87,6 +90,7 @@
       logout() {
         this.$gapi.logout().then(() => {
           this.isSignedIn = false
+          this.userId = null
           this.userName = null
           this.$root.authenticated = false
           this.documents = []
@@ -94,7 +98,6 @@
       },
       fetchFiles() {
         this.toggleOverlay(true)
-        console.log("App.fetchFiles")
         this.$gapi.getGapiClient().then((gapi) => {
           gapi.client.drive.files.list({
             q: "trashed=false and (mimeType='application/vnd.google-apps.document')",
@@ -108,6 +111,7 @@
             this.toggleOverlay(false)
           })
         })
+        this.toggleOverlay(false)
       },
       jsonifyFileInfo(file) {
         return {

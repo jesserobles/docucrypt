@@ -11,7 +11,7 @@ Vue.use(VueGapi, {
   clientId: process.env.VUE_APP_CLIENT_ID,
   discoveryDocs: ["https://docs.googleapis.com/$discovery/rest?version=v1", 
                   "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-  scope: "https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file"
+  scope: "https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive"
 })
 // email notification may be possible...
 // https://stackoverflow.com/questions/64434577/node-js-drive-api-setting-emailmessage-when-creating-a-permission-does-not-send

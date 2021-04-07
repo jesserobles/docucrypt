@@ -78,7 +78,8 @@
       <v-col>
         <v-container>
           <DocumentTable 
-            :documents="documents" 
+            :documents="documents"
+            :userId="userId"
             @updateDocs="updateDocs"
           />
         </v-container>
@@ -93,7 +94,7 @@
 import NavigationDrawer from '@/components/NavigationDrawer'
 import DocumentTable from '@/components/DocumentTable.vue'
 import NavBarHome from '@/components/NavBarHome.vue'
-
+import CryptoJS from 'crypto-js'
 export default {
   props: {
     documents: Array,
@@ -108,16 +109,87 @@ export default {
   name: 'Home',
   created() {
     this.loggedIn = this.$root.authenticated
+    if (this.loggedIn)
+      this.userId = this.$gapi.getUserData()
+    console.log("userId: " + this.userId)
   },
   methods: {
+    getStorageKey(docId) {
+      return `DC_${this.userId}_${docId}`
+    },
+    encryptText(rawText, key) {
+      // console.log("Encrypting")
+      let encrypted = CryptoJS.AES.encrypt(rawText, key)
+      return encrypted.toString()
+    },
     newDoc() {
+      if (!this.$root.authenticated) {
+        return
+      }
+      
       this.$gapi.getGapiClient().then((gapi) => {
-        gapi.client.docs.documents.create().then(respose => {
-          let documentId = respose.result.documentId
-          let title = respose.result.title
-          this.$router.push({ name: 'Document', params: {id: documentId, title: title}})
+        this.$emit("toggleOverlay", true)
+        // We need to generate the DH object to create a document
+        // We can add the metadata to the document, encrypt the text
+        const dhObject = this.dh.createDiffieHellman(128)
+        const prime = dhObject.getPrime('hex').toString('hex')
+        const publicKeyObj = dhObject.generateKeys().toString('hex');
+        const privateKey = dhObject.getPrivateKey('hex')
+        let documentLocalData = {
+          "privateKey": privateKey,
+          "prime": prime,
+          "authorPublicKey": publicKeyObj
+        }
+        let appProperties = {authorPublicKey: publicKeyObj, encryptionKeyName: 'author'}
+        console.log(JSON.stringify(publicKeyObj))
+        console.log(JSON.stringify(documentLocalData))
+        gapi.client.docs.documents.create().then(response => {
+          let requests = [
+              {
+                  'insertText': {
+                      'location': {
+                          'index': 1,
+                      },
+                      'text': this.encryptText('\n', privateKey)
+                  }
+              }
+          ]
+          let documentId = response.result.documentId
+          let title = response.result.title
+          let storageKey = `_DC_${this.userId}_${documentId}`
+          console.log(storageKey)
+          localStorage.setItem(storageKey, JSON.stringify(documentLocalData))
+          gapi.client.docs.documents.batchUpdate(
+                {documentId: documentId, requests: requests}
+          ).then(() => {
+            gapi.client.drive.files.update(
+              {fileId: documentId, appProperties: appProperties}
+            ).then(() => {
+              this.$emit("toggleOverlay", false)
+              this.updateDocs()
+              this.$router.push({ name: 'Document', params: {id: documentId, title: title}})
+            })
+          })
         })
-      }).then(this.updateDocs)
+      }).catch(() => {
+        this.$emit("toggleOverlay", false)
+      })
+    },
+    share(email, docID, primeNumber) {
+        email = 'jera84@gmail.com'
+        let baseUrl = window.location.origin
+        let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
+        this.$gapi.getGapiClient().then((gapi) => {
+            gapi.client.drive.permissions.create({
+                    fileId: docID,
+                    emailMessage: message,
+                    sendNotificationEmail: true,
+                    type: 'user',
+                    role: 'writer',
+                    emailAddress: email,
+                    fields: 'id',
+                }).execute()
+        })
     },
     updateDocs() {
       console.log("Home.updateDocs")
@@ -139,6 +211,7 @@ export default {
   data: () => ({
     loggedIn: false,
     drawer: false,
+    dialog: false
   }),
 }
 </script>
