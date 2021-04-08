@@ -110,7 +110,7 @@ export default {
   created() {
     this.loggedIn = this.$root.authenticated
     if (this.loggedIn)
-      this.userId = this.$gapi.getUserData()
+      this.userId = this.$gapi.getUserData().id
     console.log("userId: " + this.userId)
   },
   methods: {

@@ -58,6 +58,8 @@ export default {
     if (!this.$root.authenticated) {
       this.$router.push({name: 'Home'})
     }
+    window.decryptText = this.decryptText
+    window.encryptText = this.encryptText
     this.userId = this.$gapi.getUserData().id
     const storageKey = this.getStorageKey()
     let documentLocalData = localStorage.getItem(storageKey)
@@ -136,7 +138,9 @@ export default {
               gapi.client.drive.files.update(
                 {fileId: this.documentId, appProperties: metadata}
               ).then(() => {
-
+                if (encrytionKeyName == "author") {
+                  this.$router.push({ name: 'Home'})
+                }
               })
             } else {
               // We're the author. On save, need to check if we need to reset encrytion using shared secret.
@@ -389,10 +393,11 @@ export default {
           content = element.innerText
         }
         if (content == undefined) {
-          console.log(element)
-          content=''
+          return
         }
-        
+        if (content.length == 0) {
+          return
+        }
         let textStyle = {}
         if (!element.tagName) {
           // This is a plain text run
@@ -425,25 +430,10 @@ export default {
       return elements
     },
     save() {
-      let encrytionKeyName = this.metadata.encryptionKeyName
-      if (encrytionKeyName == "author" && this.metadata.viewerPublicKey) {
-        let viewerPublicKey = this.metadata.viewerPublicKey
-        const prime = this.documentLocalData.prime
-        const dhObject = this.dh.createDiffieHellman(prime, 'hex')
-        const privateKey = this.documentLocalData.privateKey
-        dhObject.setPrivateKey(this.fromHexString(privateKey))
-        let sharedSecret = dhObject.computeSecret(this.fromHexString(viewerPublicKey)).toString('hex')
-        this.pp = sharedSecret
-        this.documentLocalData["sharedSecret"] = sharedSecret
-        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.documentLocalData))
-        this.metadata['encryptionKeyName'] = "shared"
-        this.$gapi.getGapiClient().then((gapi) => {
-           gapi.client.drive.files.update(
-              {fileId: this.documentId, appProperties: this.metadata}
-            )
-        })
-
-      }
+      // If we're the author, if encryption key is author,
+      // check if viewerPublicKey present in documentappProperties.
+      // If it is, we need to compute the secret, update this.pp,
+      // updatelocalStorageObject, and doc appProperties.
       let doc = this.document
       let requests = []
       let lastElementIndex = doc.body.content.length - 1
@@ -460,6 +450,36 @@ export default {
                 }
             },
         ])
+      }
+      console.log(`documentLocalData: ${JSON.stringify(this.documentLocalData)}`)
+      console.log(`appProperties: ${JSON.stringify(this.metadata)}`)
+      let encrytionKeyName = this.metadata.encryptionKeyName
+      if (encrytionKeyName == "author" && this.metadata.viewerPublicKey) {
+        console.log("Need to update key!")
+        let viewerPublicKey = this.metadata.viewerPublicKey
+        const prime = this.documentLocalData.prime
+        const dhObject = this.dh.createDiffieHellman(prime, 'hex')
+        const privateKey = this.documentLocalData.privateKey
+        dhObject.setPrivateKey(this.fromHexString(privateKey))
+        let sharedSecret = dhObject.computeSecret(this.fromHexString(viewerPublicKey)).toString('hex')
+        console.log("Shared Secret: " + sharedSecret)
+        this.pp = sharedSecret
+        this.documentLocalData["sharedSecret"] = sharedSecret
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.documentLocalData))
+        this.metadata['encryptionKeyName'] = "shared"
+        this.$gapi.getGapiClient().then((gapi) => {
+           this.$emit("toggleOverlay", true)
+           gapi.client.drive.files.update(
+              {fileId: this.documentId, appProperties: this.metadata}
+            ).then(() => {
+              Array.prototype.push.apply(requests, this.convertHtml(this.html_))
+              gapi.client.docs.documents.batchUpdate(
+                        {documentId: this.documentId, requests: requests}
+              ).then(this.fetchDocument)
+            })
+        })
+
+      } else {
         this.$emit("toggleOverlay", true)
         Array.prototype.push.apply(requests, this.convertHtml(this.html_))
         this.$gapi.getGapiClient().then((gapi) => {
