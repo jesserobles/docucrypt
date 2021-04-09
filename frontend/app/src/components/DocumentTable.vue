@@ -145,7 +145,6 @@ export default {
             {"name": "Delete", "method": this.deleteDoc},
             {"name": "Share", "method": this.openShare}
         ]
-        console.log("Doc Table" + this.userId)
         window.share = this.share
     },
     methods: {
@@ -166,7 +165,6 @@ export default {
         shareDoc() {
             let docID = this.currentDocId
             let email = this.form.email
-            console.log("share: " + docID)
             let storageKey = this.getStorageKey(docID)
             let documentLocalData = localStorage.getItem(storageKey)
             if (!documentLocalData)
@@ -175,7 +173,6 @@ export default {
             const prime = documentLocalData.prime
             const urlWithParams = new URL(`${window.location.href}doc/${docID}`)
             urlWithParams.searchParams.append("p", prime)
-            // console.log(urlWithParams.href)
             let message = {
                 fileId: docID,
                 emailMessage: urlWithParams.href,
@@ -192,13 +189,17 @@ export default {
                 })
             })
         },
+        toggleOverlay(show) {
+            console.log("DocumentTable.toggleOverlay: " + show)
+            this.$emit("toggleOverlay", show)
+        },
         deleteDoc(docID) {
+            this.toggleOverlay(true)
             this.$gapi.getGapiClient().then((gapi) => {
                 gapi.client.drive.files.delete({fileId: docID}).then(this.updateDocs)
             }).then(() => {
                 // delete key
                 let key = this.getStorageKey(docID)
-                console.log("removing: " + key)
                 localStorage.removeItem(key)
                 this.updateDocs()
             })

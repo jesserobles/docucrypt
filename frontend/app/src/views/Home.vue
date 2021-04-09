@@ -81,6 +81,7 @@
             :documents="documents"
             :userId="userId"
             @updateDocs="updateDocs"
+            @toggleOverlay="toggleOverlay"
           />
         </v-container>
       </v-col>
@@ -109,24 +110,32 @@ export default {
   name: 'Home',
   created() {
     this.loggedIn = this.$root.authenticated
-    if (this.loggedIn)
-      this.userId = this.$gapi.getUserData().id
-    console.log("userId: " + this.userId)
+    if (this.loggedIn) {
+      let user = this.$gapi.getUserData()
+      console.log("User: " + user)
+      if (user)
+        this.userId = user.id
+    }
   },
   methods: {
     getStorageKey(docId) {
       return `DC_${this.userId}_${docId}`
     },
     encryptText(rawText, key) {
-      // console.log("Encrypting")
       let encrypted = CryptoJS.AES.encrypt(rawText, key)
       return encrypted.toString()
     },
+    toggleOverlay(val) {
+      this.$emit("toggleOverlay", val)
+    },
     newDoc() {
+      this.$emit("toggleOverlay", true)
       if (!this.$root.authenticated) {
+        this.$emit("toggleOverlay", false)
         return
       }
-      
+      let user = this.$gapi.getUserData()
+      this.userId = user.id
       this.$gapi.getGapiClient().then((gapi) => {
         this.$emit("toggleOverlay", true)
         // We need to generate the DH object to create a document
@@ -175,22 +184,22 @@ export default {
         this.$emit("toggleOverlay", false)
       })
     },
-    share(email, docID, primeNumber) {
-        email = 'jera84@gmail.com'
-        let baseUrl = window.location.origin
-        let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
-        this.$gapi.getGapiClient().then((gapi) => {
-            gapi.client.drive.permissions.create({
-                    fileId: docID,
-                    emailMessage: message,
-                    sendNotificationEmail: true,
-                    type: 'user',
-                    role: 'writer',
-                    emailAddress: email,
-                    fields: 'id',
-                }).execute()
-        })
-    },
+    // share(email, docID, primeNumber) {
+    //     email = 'jera84@gmail.com'
+    //     let baseUrl = window.location.origin
+    //     let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
+    //     this.$gapi.getGapiClient().then((gapi) => {
+    //         gapi.client.drive.permissions.create({
+    //                 fileId: docID,
+    //                 emailMessage: message,
+    //                 sendNotificationEmail: true,
+    //                 type: 'user',
+    //                 role: 'writer',
+    //                 emailAddress: email,
+    //                 fields: 'id',
+    //             }).execute()
+    //     })
+    // },
     updateDocs() {
       console.log("Home.updateDocs")
       this.$emit("updateDocs")
@@ -211,7 +220,8 @@ export default {
   data: () => ({
     loggedIn: false,
     drawer: false,
-    dialog: false
+    dialog: false,
+    userId: null,
   }),
 }
 </script>

@@ -73,6 +73,7 @@
         return docucrypt_id
       },
       toggleOverlay(show) {
+        console.log("Triggered toggleOverlay: " + show)
         this.overlay = show
       },
       login() {
