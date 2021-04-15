@@ -88,9 +88,7 @@ export default {
             fileId: this.documentId,
             fields: 'id,name,mimeType,appProperties,owners'
         }).then((response) => {
-            console.log(response.result.owners)
             let metadata = response.result.appProperties
-            console.log("Doc metadata: " + JSON.stringify(metadata))
             return metadata
         })
       })
@@ -248,7 +246,6 @@ export default {
         let elements = this.paragraphToJson(paragraph)
         elements.forEach(e => {
           let content = e.textRun.content
-          // console.log(content)
           if (content == undefined) return
           content = this.encryptText(content, this.pp) + "\n"
           let length = content.length
@@ -319,13 +316,11 @@ export default {
           let counter = 0
           while (element && (element.tagName != undefined) && (element.tagName != "SPAN")) {
             counter ++
-            console.log(element)
             let styleKey = this.jsonTagMap[element.tagName.toLowerCase()]
             textStyle[styleKey] = true
             element = element.childNodes[0]
             if (counter == 100) break
           }
-          console.log(element)
           elements.push({
             textRun: {
               'content': content,
@@ -358,18 +353,14 @@ export default {
             },
         ])
       }
-      console.log(`documentLocalData: ${JSON.stringify(this.documentLocalData)}`)
-      console.log(`appProperties: ${JSON.stringify(this.metadata)}`)
       let encrytionKeyName = this.metadata.encryptionKeyName
       if (encrytionKeyName == "author" && this.metadata.viewerPublicKey) {
-        console.log("Need to update key!")
         let viewerPublicKey = this.metadata.viewerPublicKey
         const prime = this.documentLocalData.prime
         const dhObject = this.dh.createDiffieHellman(prime, 'hex')
         const privateKey = this.documentLocalData.privateKey
         dhObject.setPrivateKey(this.fromHexString(privateKey))
         let sharedSecret = dhObject.computeSecret(this.fromHexString(viewerPublicKey)).toString('hex')
-        console.log("Shared Secret: " + sharedSecret)
         this.pp = sharedSecret
         this.documentLocalData["sharedSecret"] = sharedSecret
         localStorage.setItem(this.getStorageKey(), JSON.stringify(this.documentLocalData))
