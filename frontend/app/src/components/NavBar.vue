@@ -65,8 +65,8 @@ export default {
                     click: () =>
                     that.save()
                 },
-                { is: "separator" },
-                { text: "Print...", icon: "print", click: () => window.print() },
+                // { is: "separator" },
+                // { text: "Print...", icon: "print", click: () => window.print() },
                 { is: "separator" },
                 {
                     text: "Close",
@@ -94,116 +94,116 @@ export default {
                 ],
             },
             ],
-            [
-            {
-                icon: "format_align_left",
-                title: "Align left",
-                hotkey: this.isMacLike ? "shift+command+l" : "ctrl+shift+l",
-                click: () => document.execCommand("justifyLeft"),
-            },
-            {
-                icon: "format_align_center",
-                title: "Align center",
-                hotkey: this.isMacLike ? "shift+command+e" : "ctrl+shift+e",
-                click: () => document.execCommand("justifyCenter"),
-            },
-            {
-                icon: "format_align_right",
-                title: "Align right",
-                hotkey: this.isMacLike ? "shift+command+r" : "ctrl+shift+r",
-                click: () => document.execCommand("justifyRight"),
-            },
-            {
-                icon: "format_align_justify",
-                title: "Justify content",
-                hotkey: this.isMacLike ? "shift+command+j" : "ctrl+shift+j",
-                click: () => document.execCommand("justifyFull"),
-            },
-            { is: "separator" },
-            {
-                icon: "format_bold",
-                title: "Bold",
-                hotkey: this.isMacLike ? "command+b" : "ctrl+b",
-                click: () => document.execCommand("bold"),
-            },
-            {
-                icon: "format_italic",
-                title: "Italic",
-                hotkey: this.isMacLike ? "command+i" : "ctrl+i",
-                click: () => document.execCommand("italic"),
-            },
-            {
-                icon: "format_underline",
-                title: "Underline",
-                hotkey: this.isMacLike ? "command+u" : "ctrl+u",
-                click: () => document.execCommand("underline"),
-            },
-            {
-                icon: "format_strikethrough",
-                title: "Strike through",
-                click: () => document.execCommand("strikethrough"),
-            },
-            { is: "separator" },
-            {
-                html:
-                '<div class="ellipsis" style="width: 80px; font-size: 95%;">' +
-                this.font +
-                "</div>",
-                title: "Font",
-                chevron: true,
-                menu: this.font_menu,
-                menu_height: 200,
-            },
-            { is: "separator" },
-            {
-                icon: "format_list_numbered",
-                title: "Numbered list",
-                click: () => document.execCommand("insertOrderedList"),
-            },
-            {
-                icon: "format_list_bulleted",
-                title: "Bulleted list",
-                click: () => document.execCommand("insertUnorderedList"),
-            },
-            { is: "separator" },
-            {
-                icon: "format_indent_increase",
-                title: "Increase indent",
-                click: () => document.execCommand("indent"),
-            },
-            {
-                icon: "format_indent_decrease",
-                title: "Decrease indent",
-                click: () => document.execCommand("outdent"),
-            },
-            { is: "separator" },
-            // { is: DemoCustomButton, text: "Your component", click: () => alert("Your custom action!") },
-            { is: "separator" },
-            {
-                html: "<b>H1</b>",
-                title: "Header 1",
-                click: () => document.execCommand("formatBlock", false, "<h1>"),
-            },
-            {
-                html: "<b>H2</b>",
-                title: "Header 2",
-                click: () => document.execCommand("formatBlock", false, "<h2>"),
-            },
-            {
-                html: "<b>H3</b>",
-                title: "Header 3",
-                click: () => document.execCommand("formatBlock", false, "<h3>"),
-            },
-            {
-                icon: "format_clear",
-                text: "Clear",
-                title: "Clear format",
-                click() {
-                document.execCommand("removeFormat");
-                document.execCommand("formatBlock", false, "<div>");
-                },
-            },
-            ],
+            // [
+            // {
+            //     icon: "format_align_left",
+            //     title: "Align left",
+            //     hotkey: this.isMacLike ? "shift+command+l" : "ctrl+shift+l",
+            //     click: () => document.execCommand("justifyLeft"),
+            // },
+            // {
+            //     icon: "format_align_center",
+            //     title: "Align center",
+            //     hotkey: this.isMacLike ? "shift+command+e" : "ctrl+shift+e",
+            //     click: () => document.execCommand("justifyCenter"),
+            // },
+            // {
+            //     icon: "format_align_right",
+            //     title: "Align right",
+            //     hotkey: this.isMacLike ? "shift+command+r" : "ctrl+shift+r",
+            //     click: () => document.execCommand("justifyRight"),
+            // },
+            // {
+            //     icon: "format_align_justify",
+            //     title: "Justify content",
+            //     hotkey: this.isMacLike ? "shift+command+j" : "ctrl+shift+j",
+            //     click: () => document.execCommand("justifyFull"),
+            // },
+            // { is: "separator" },
+            // {
+            //     icon: "format_bold",
+            //     title: "Bold",
+            //     hotkey: this.isMacLike ? "command+b" : "ctrl+b",
+            //     click: () => document.execCommand("bold"),
+            // },
+            // {
+            //     icon: "format_italic",
+            //     title: "Italic",
+            //     hotkey: this.isMacLike ? "command+i" : "ctrl+i",
+            //     click: () => document.execCommand("italic"),
+            // },
+            // {
+            //     icon: "format_underline",
+            //     title: "Underline",
+            //     hotkey: this.isMacLike ? "command+u" : "ctrl+u",
+            //     click: () => document.execCommand("underline"),
+            // },
+            // {
+            //     icon: "format_strikethrough",
+            //     title: "Strike through",
+            //     click: () => document.execCommand("strikethrough"),
+            // },
+            // { is: "separator" },
+            // {
+            //     html:
+            //     '<div class="ellipsis" style="width: 80px; font-size: 95%;">' +
+            //     this.font +
+            //     "</div>",
+            //     title: "Font",
+            //     chevron: true,
+            //     menu: this.font_menu,
+            //     menu_height: 200,
+            // },
+            // { is: "separator" },
+            // {
+            //     icon: "format_list_numbered",
+            //     title: "Numbered list",
+            //     click: () => document.execCommand("insertOrderedList"),
+            // },
+            // {
+            //     icon: "format_list_bulleted",
+            //     title: "Bulleted list",
+            //     click: () => document.execCommand("insertUnorderedList"),
+            // },
+            // { is: "separator" },
+            // {
+            //     icon: "format_indent_increase",
+            //     title: "Increase indent",
+            //     click: () => document.execCommand("indent"),
+            // },
+            // {
+            //     icon: "format_indent_decrease",
+            //     title: "Decrease indent",
+            //     click: () => document.execCommand("outdent"),
+            // },
+            // { is: "separator" },
+            // // { is: DemoCustomButton, text: "Your component", click: () => alert("Your custom action!") },
+            // { is: "separator" },
+            // {
+            //     html: "<b>H1</b>",
+            //     title: "Header 1",
+            //     click: () => document.execCommand("formatBlock", false, "<h1>"),
+            // },
+            // {
+            //     html: "<b>H2</b>",
+            //     title: "Header 2",
+            //     click: () => document.execCommand("formatBlock", false, "<h2>"),
+            // },
+            // {
+            //     html: "<b>H3</b>",
+            //     title: "Header 3",
+            //     click: () => document.execCommand("formatBlock", false, "<h3>"),
+            // },
+            // {
+            //     icon: "format_clear",
+            //     text: "Clear",
+            //     title: "Clear format",
+            //     click() {
+            //     document.execCommand("removeFormat");
+            //     document.execCommand("formatBlock", false, "<div>");
+            //     },
+            // },
+            // ],
         ];
         },
         userAvatar() {

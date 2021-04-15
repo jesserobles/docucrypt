@@ -40,6 +40,7 @@ export default {
       userId: null,
       ownerIsMe: false,
       documentLocalData: null,
+      owner: null,
       tagMap: {
         italic: "em",
         underline: "u",
@@ -58,8 +59,6 @@ export default {
     if (!this.$root.authenticated) {
       this.$router.push({name: 'Home'})
     }
-    window.decryptText = this.decryptText
-    window.encryptText = this.encryptText
     this.userId = this.$gapi.getUserData().id
     const storageKey = this.getStorageKey()
     let documentLocalData = localStorage.getItem(storageKey)
@@ -75,7 +74,6 @@ export default {
     logInput(e) {
       this.html_ = e.target.innerHTML
       console.log(this.html_)
-      window.html_ = this.html_
     },
     encryptText(rawText, pp) {
       let encrypted = CryptoJS.AES.encrypt(rawText, pp)
@@ -89,8 +87,9 @@ export default {
       this.$gapi.getGapiClient().then((gapi) => {
         gapi.client.drive.files.get({
             fileId: this.documentId,
-            fields: 'id,name,mimeType,appProperties'
+            fields: 'id,name,mimeType,appProperties,owners'
         }).then((response) => {
+            console.log(response.result.owners)
             let metadata = response.result.appProperties
             console.log("Doc metadata: " + JSON.stringify(metadata))
             return metadata
@@ -109,14 +108,30 @@ export default {
       return keyData
       
     },
+    writeEmail() {
+      let user = this.$gapi.getUserData()
+      let link = `${window.location.origin}/doc/${this.documentId}`
+      let message = {
+        'to': this.owner.emailAddress,
+        'from': user.email,
+        subject: 'Please Open Docucrypt Document'
+      }
+      let email = ''
+      for(var header in message)
+        email += header += ": "+message[header]+"\r\n";
+
+      email += "\r\n" + `Your document ${link} has been opened by ${user.fullName}. They will not be able to view it until you open it and save it. Please open and save the document.`
+      return email
+    },
     fetchDocument() {
       this.$emit("toggleOverlay", true)
       this.$gapi.getGapiClient().then((gapi) => {
         gapi.client.drive.files.get({
             fileId: this.documentId,
-            fields: 'id,name,mimeType,appProperties'
+            fields: 'id,name,mimeType,appProperties,owners'
         }).then((response) => {
           let metadata = response.result.appProperties
+          this.owner = response.result.owners[0]
           if (metadata) {
             this.encrypted = true
             let encrytionKeyName = metadata.encryptionKeyName
@@ -139,7 +154,13 @@ export default {
                 {fileId: this.documentId, appProperties: metadata}
               ).then(() => {
                 if (encrytionKeyName == "author") {
-                  this.$router.push({ name: 'Home'})
+                  let email = this.writeEmail()
+                  gapi.client.gmail.users.messages.send({userId: 'me', resource: 
+                    {raw: window.btoa(email).replace(/\+/g, '-').replace(/\//g, '_')}}
+                  ).then(() => {
+                    this.$router.push({ name: 'Home'})
+                    return
+                  })
                 }
               })
             } else {
@@ -162,7 +183,6 @@ export default {
             this.title = this.document.title;
             this.$emit('title', this.title)
             this.body = this.document.body.content
-            window.doc = this.document
             let contentDiv = document.createElement('div')
             this.body.forEach(element => {
                 if ('paragraph' in element) {
@@ -181,118 +201,6 @@ export default {
     },
     fromHexString(hexString) {
       return new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-    },
-    createDH() {
-      /*
-        Create a DH prime if needed, check doc metadata, store
-        object as needed. Document metadata:
-        {
-          "authorPublicKey": "24ddd36afe7e7d22bb74143bf8c98a8d",
-          "viewerPublicKey": "09ee34b857225b62dd0d1ca6039766c5",
-          "encryptionKeyName": "shared"
-        }
-        "viewerPublicKey" may not be present
-        Local storage object:
-        {
-          "authorPrivateKey": "",
-          "prime": ""
-        }
-      */
-      let metadata = this.metadata
-      let storageKey = `_DC_${this.documentId}`
-      let documentLocalData = localStorage.getItem(storageKey)
-      if (documentLocalData == null) {
-        // Either new document, or document was shared with us.
-        documentLocalData = {}
-        if (_.isEmpty(metadata)) {
-          // New document
-          console.log("No metadata. New document")
-          const author = this.dh.createDiffieHellman(128)
-          const prime = author.getPrime('hex').toString('hex')
-          let authorPublicKey = author.generateKeys().toString("hex")
-          documentLocalData['prime'] = prime
-          documentLocalData["privateKey"] = author.getPrivateKey("hex")
-          documentLocalData['publicKey'] = authorPublicKey
-          localStorage.setItem(storageKey, JSON.stringify(documentLocalData))
-          this.pp = author.getPrivateKey("hex")
-          // update document metadata
-          metadata = {
-            'authorPublicKey': authorPublicKey,
-            'encryptionKeyName': "author"
-          }
-          this.metadata = metadata
-          return {
-            'documentLocalData': documentLocalData,
-            'metadata': metadata
-          }
-          /*
-          this.$gapi.getGapiClient().then((gapi) => {
-            gapi.client.drive.files.update(
-              { 
-                fileId: this.documentId, 
-                appProperties: metadata
-              }
-            ).execute()
-          })
-          */
-        } else {
-          // Existing document. User is viewer opening for the first time. 
-          // Check for authorPublicKey, encryptionKeyName
-          // let authorPublicKey = metadata.authorPublicKey
-          // let encryptionKeyName = metadata.encryptionKeyName
-          const urlParams = new URLSearchParams(window.location.search);
-          let prime = urlParams.get("p")
-          const viewer = this.dh.createDiffieHellman(prime, 'hex')
-          let viewerPublicKey = viewer.generateKeys("hex")
-          let authorPublicKey = metadata.authorPublicKey
-          metadata["viewerPublicKey"] = viewerPublicKey
-          let sharedSecret = viewer.computeSecret(this.fromHexString(authorPublicKey))
-          documentLocalData["prime"] = prime
-          documentLocalData["privateKey"] = viewer.getPrivateKey("hex")
-          documentLocalData["publicKey"] = viewerPublicKey
-          documentLocalData["sharedSecret"] = sharedSecret
-
-          return {
-            'documentLocalData': documentLocalData,
-            'metadata': metadata
-          }
-          //localStorage.setItem(storageKey, JSON.stringify(documentLocalData))
-          /*
-          this.$gapi.getGapiClient().then((gapi) => {
-            gapi.client.drive.files.update(
-              { 
-                fileId: this.documentId, 
-                appProperties: metadata
-              }
-            ).execute()
-          })*/
-        }
-      } else {
-        // Document exists. We are either author opening it, or viewer.
-        // If we're author, check encryptionKeyName. If it's author,
-        // Check for viewerPublicKey. If it doesn't exist, do nothing, pp
-        // is documentLocalData.privateKey. Otherwise, generate sharedSecret
-        // using viewerPublicKey.
-        // documentLocalData exists. Get encryp 
-        // We still create the DH using the stored prime number
-        // const author = this.dh.createDiffieHellman(128)
-        // const prime = author.getPrime('hex').toString('hex')
-        // const author = this.dh.createDiffieHellman(prime, 'hex');
-        // let authorPublicKey = author.generateKeys().toString("hex")
-        // Check documentLocalData for sharedSecret. If it doesn't exist, we need to generate it using view public key
-        let sharedSecret = documentLocalData.sharedSecret
-        if (sharedSecret == undefined){
-          let viewerPublicKey = metadata.viewerPublicKey
-          if (viewerPublicKey) {
-            sharedSecret = ''
-          }
-        }      
-      }
-      
-      // gapi.client.drive.files.update({fileId: this.documentId, appProperties: {"authorPublicKey": publicKey}}).execute()
-      // const alice = dh.createDiffieHellman(128);
-      // const aliceKey = alice.generateKeys();
-      // const prime = alice.getPrime('hex').toString('hex');
     },
     getPrime() {
       const urlParams = new URLSearchParams(window.location.search);

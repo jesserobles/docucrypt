@@ -107,7 +107,6 @@
     </div>
 </template>
 <script>
-// import _ from 'lodash'
 export default {
     props: {
         loggedIn: {
@@ -145,7 +144,6 @@ export default {
             {"name": "Delete", "method": this.deleteDoc},
             {"name": "Share", "method": this.openShare}
         ]
-        window.share = this.share
     },
     methods: {
         resetForm () {
@@ -167,11 +165,11 @@ export default {
             let email = this.form.email
             let storageKey = this.getStorageKey(docID)
             let documentLocalData = localStorage.getItem(storageKey)
-            if (!documentLocalData)
-                return
+            // if (!documentLocalData)
+            //     return
             documentLocalData = JSON.parse(documentLocalData)
             const prime = documentLocalData.prime
-            const urlWithParams = new URL(`${window.location.href}doc/${docID}`)
+            const urlWithParams = new URL(`${window.location.origin}/doc/${docID}`)
             urlWithParams.searchParams.append("p", prime)
             let message = {
                 fileId: docID,

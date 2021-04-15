@@ -112,7 +112,6 @@ export default {
     this.loggedIn = this.$root.authenticated
     if (this.loggedIn) {
       let user = this.$gapi.getUserData()
-      console.log("User: " + user)
       if (user)
         this.userId = user.id
     }
@@ -150,8 +149,6 @@ export default {
           "authorPublicKey": publicKeyObj
         }
         let appProperties = {authorPublicKey: publicKeyObj, encryptionKeyName: 'author'}
-        console.log(JSON.stringify(publicKeyObj))
-        console.log(JSON.stringify(documentLocalData))
         gapi.client.docs.documents.create().then(response => {
           let requests = [
               {
@@ -166,7 +163,6 @@ export default {
           let documentId = response.result.documentId
           let title = response.result.title
           let storageKey = `_DC_${this.userId}_${documentId}`
-          console.log(storageKey)
           localStorage.setItem(storageKey, JSON.stringify(documentLocalData))
           gapi.client.docs.documents.batchUpdate(
                 {documentId: documentId, requests: requests}
@@ -184,22 +180,6 @@ export default {
         this.$emit("toggleOverlay", false)
       })
     },
-    // share(email, docID, primeNumber) {
-    //     email = 'jera84@gmail.com'
-    //     let baseUrl = window.location.origin
-    //     let message = baseUrl + '/doc/' + docID + '?p=' + primeNumber
-    //     this.$gapi.getGapiClient().then((gapi) => {
-    //         gapi.client.drive.permissions.create({
-    //                 fileId: docID,
-    //                 emailMessage: message,
-    //                 sendNotificationEmail: true,
-    //                 type: 'user',
-    //                 role: 'writer',
-    //                 emailAddress: email,
-    //                 fields: 'id',
-    //             }).execute()
-    //     })
-    // },
     updateDocs() {
       console.log("Home.updateDocs")
       this.$emit("updateDocs")

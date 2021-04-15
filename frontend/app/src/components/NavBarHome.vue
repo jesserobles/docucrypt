@@ -34,6 +34,9 @@
                 </v-btn>
             </template>
             <v-list>
+                <v-list-item v-if="isSignedIn">
+                    <v-list-item-title>{{userName}}</v-list-item-title>
+                </v-list-item>
                 <v-list-item
                     @click="logfunction"
                 >

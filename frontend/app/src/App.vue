@@ -37,16 +37,14 @@
       overlay: false,
     }),
     created() {
-      window.dh = this.dh
       this.overlay = true
-      window.fetchFiles = this.fetchFiles
       document.title = this.$appName; // better way to dynamically handle title @ https://stackoverflow.com/questions/36612847/how-can-i-bind-the-html-title-content-in-vuejs
       this.$gapi.getAuthInstance().then(response => {
         this.isSignedIn = response.isSignedIn.get()
         this.$root.authenticated = this.isSignedIn
         if (this.isSignedIn) {
           const userData = this.$gapi.getUserData()
-          this.userName = userData.firstName
+          this.userName = userData.fullName
           this.userId = userData.id
           this.$root.userId = userData.id
           if (this.documents.length == 0) {
@@ -106,7 +104,6 @@
             'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, ownedByMe, owners, appProperties)"
           }).then((response) => {
             let docs = response.result.files.map(this.jsonifyFileInfo)
-            window.rawFiles = response.result.files
             this.documents = docs
           }).then(() => {
             this.toggleOverlay(false)
