@@ -246,7 +246,6 @@ export default {
         },
         enter(e) {
             e.preventDefault();
-            console.log("enter")
         },
     },
 }

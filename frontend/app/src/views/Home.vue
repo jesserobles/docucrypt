@@ -181,7 +181,6 @@ export default {
       })
     },
     updateDocs() {
-      console.log("Home.updateDocs")
       this.$emit("updateDocs")
     },
     cardAction() {

@@ -20,7 +20,6 @@
   </div>
 </template>
 <script>
-import _ from 'lodash'
 import CryptoJS from 'crypto-js'
 // for help parsing, take a look at
 // https://github.com/SimonGZ/google-docs-converter/blob/master/lib/parser.ts

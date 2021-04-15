@@ -188,7 +188,6 @@ export default {
             })
         },
         toggleOverlay(show) {
-            console.log("DocumentTable.toggleOverlay: " + show)
             this.$emit("toggleOverlay", show)
         },
         deleteDoc(docID) {
