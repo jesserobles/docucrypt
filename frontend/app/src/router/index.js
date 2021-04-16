@@ -20,10 +20,16 @@ const routes = [
     component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
   },
   {
-    path: '/doc',
+    path: '/doc/:id',
     name: 'Document',
-    component: Document
+    component: Document,
+    props: true,
   },
+  // {
+  //   path: '/edit/:id',
+  //   name: 'Edit Document',
+  //   component: Document
+  // },
 ]
 
 const router = new VueRouter({

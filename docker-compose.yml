@@ -1,13 +1,5 @@
 version: "3.7"
 
-x-database-credentials: &database-credentials
-  DB_HOST: "${DB_HOST:-db}"
-  DB_PORT: "${DB_PORT:-5432}"
-  POSTGRESQL_PASSWORD: "${POSTGRESQL_PASSWORD:-password}"
-  POSTGRESQL_USERNAME: "${POSTGRESQL_USERNAME:-postgres}"
-  POSTGRESQL_DATABASE: "${POSTGRESQL_DATABASE:-backend}"
-
-
 services:
   front-end:
     image: docucrypt_frontend:latest
@@ -15,33 +7,14 @@ services:
       context: ./frontend
     entrypoint: /entrypoint.sh
     command: yarn serve
-    # command: tail -f /dev/null
     volumes:
       - ./frontend/entrypoint.sh:/entrypoint.sh
       - ./frontend/app:/app
+      - ./.env:/app/.env
     networks:
       - app_network
     ports:
       - ${FRONTEND_PORT:-8080}:8080
-
-  backend:
-    image: docucrypt_python:latest
-    build: 
-      context: backend
-    command: tail -f /dev/null
-    networks:
-      - app_network
-    environment:
-      <<: *database-credentials
-
-  db:
-    image: bitnami/postgresql:latest
-    networks:
-      - app_network
-    environment:
-      <<: *database-credentials
-      POSTGRESQL_POSTGRES_PASSWORD: ${POSTGRESQL_POSTGRES_PASSWORD:-password}
-
 
 networks:
   app_network:
