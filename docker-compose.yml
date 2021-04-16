@@ -1,13 +1,5 @@
 version: "3.7"
 
-x-database-credentials: &database-credentials
-  DB_HOST: "${DB_HOST:-db}"
-  DB_PORT: "${DB_PORT:-5432}"
-  POSTGRESQL_PASSWORD: "${POSTGRESQL_PASSWORD:-password}"
-  POSTGRESQL_USERNAME: "${POSTGRESQL_USERNAME:-postgres}"
-  POSTGRESQL_DATABASE: "${POSTGRESQL_DATABASE:-backend}"
-
-
 services:
   front-end:
     image: docucrypt_frontend:latest
@@ -23,33 +15,6 @@ services:
       - app_network
     ports:
       - ${FRONTEND_PORT:-8080}:8080
-
-  backend:
-    image: docucrypt_python:latest
-    build: 
-      context: backend
-    command: tail -f /dev/null
-    volumes:
-      - ./backend/app:/app
-    networks:
-      - app_network
-    environment:
-      <<: *database-credentials
-    ports:
-      - 59837:59837
-      - 50300:50300
-      - 41615:41615
-      - 60265:60265
-      - 54939:54939
-
-  db:
-    image: bitnami/postgresql:latest
-    networks:
-      - app_network
-    environment:
-      <<: *database-credentials
-      POSTGRESQL_POSTGRES_PASSWORD: ${POSTGRESQL_POSTGRES_PASSWORD:-password}
-
 
 networks:
   app_network:
